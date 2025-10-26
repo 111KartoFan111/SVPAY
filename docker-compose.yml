@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Сервис базы данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: fastapidb
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    ports:
+      - "5433:5432"
+    volumes:
+      - fastapi_pg_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  # Сервис FastAPI-приложения
+  web:
+    container_name: fastapibackend
+    build: ./app
+    command: uvicorn main:app --host 0.0.0.0 --port 7000 --reload
+    volumes:
+      - ./app:/app
+    ports:
+      - "7000:7000" # Порт хоста, который вы использовали
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/mydb"
+    # --- ИЗМЕНЕНО: Ждать, пока 'db' не станет 'healthy' ---
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  # Сервис Adminer для управления БД
+  adminer:
+    image: adminer
+    container_name: fastapiadminer
+    ports:
+      - "7070:7070" # Порт хоста, который вы использовали
+    depends_on:
+      # Adminer также должен ждать, пока БД не будет готова
+      db:
+        condition: service_healthy
+    restart: always
+
+# Определяем именованный volume для сохранения данных БД
+volumes:
+  fastapi_pg_data:
+    driver: local
+
