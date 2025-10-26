@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - SVPAY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #2563eb;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .brand-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .brand-tagline {
+            font-size: 15px;
+            color: #64748b;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            color: #1e293b;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .form-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .password-input-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #64748b;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-password:hover {
+            color: #2563eb;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #2563eb;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #475569;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .forgot-link {
+            font-size: 14px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-login:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 32px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .divider span {
+            padding: 0 16px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .btn-demo {
+            width: 100%;
+            padding: 14px;
+            background: #f8fafc;
+            color: #475569;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-demo:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .error-message {
+            display: none;
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #fecaca;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 32px 24px;
+            }
+
+            .logo-section {
+                margin-bottom: 32px;
+            }
+
+            .brand-name {
+                font-size: 24px;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-container {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo">
+                <span class="logo-text">SV</span>
+            </div>
+            <h1 class="brand-name">SVPAY</h1>
+            <p class="brand-tagline">Система управления RFID картами</p>
+        </div>
+
+        <div class="login-card">
+            <div class="login-header">
+                <h2 class="login-title">Добро пожаловать</h2>
+                <p class="login-subtitle">Войдите в свой аккаунт</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">Имя пользователя</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="Введите имя пользователя"
+                        required
+                        autocomplete="username"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Пароль</label>
+                    <div class="password-input-wrapper">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            placeholder="Введите пароль"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <span id="eyeIcon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label class="checkbox-label" for="remember">Запомнить меня</label>
+                    </div>
+                    <a href="#" class="forgot-link">Забыли пароль?</a>
+                </div>
+
+                <button type="submit" class="btn-login">Войти</button>
+            </form>
+
+            <div class="divider">
+                <span>или</span>
+            </div>
+
+            <button type="button" class="btn-demo" onclick="demoLogin()">
+                Демо-режим
+            </button>
+
+            <div class="footer-text">
+                © 2024 SVPAY. Все права защищены.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.textContent = '👁️';
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+
+            try {
+                // For demo purposes - simple authentication
+                // In production, this should be a proper API call
+                if (username && password) {
+                    // Store login state
+                    if (remember) {
+                        localStorage.setItem('svpay_auth', 'true');
+                        localStorage.setItem('svpay_user', username);
+                    } else {
+                        sessionStorage.setItem('svpay_auth', 'true');
+                        sessionStorage.setItem('svpay_user', username);
+                    }
+
+                    // Redirect to main page
+                    window.location.href = 'index.html';
+                } else {
+                    showError('Пожалуйста, заполните все поля');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Произошла ошибка при входе. Попробуйте снова.');
+            }
+        });
+
+        // Demo login
+        function demoLogin() {
+            sessionStorage.setItem('svpay_auth', 'true');
+            sessionStorage.setItem('svpay_user', 'demo');
+            window.location.href = 'index.html';
+        }
+
+        // Check if already logged in
+        if (localStorage.getItem('svpay_auth') || sessionStorage.getItem('svpay_auth')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
