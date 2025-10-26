@@ -1,0 +1,19 @@
+[2025-10-26 20:17:08 +0500] [773145] [INFO] Starting gunicorn 22.0.0
+[2025-10-26 20:17:08 +0500] [773145] [INFO] Listening at: http://0.0.0.0:7000 (773145)
+[2025-10-26 20:17:08 +0500] [773145] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2025-10-26 20:17:08 +0500] [773147] [INFO] Booting worker with pid: 773147
+[2025-10-26 20:17:08 +0500] [773148] [INFO] Booting worker with pid: 773148
+[2025-10-26 20:17:08 +0500] [773149] [INFO] Booting worker with pid: 773149
+[2025-10-26 20:17:08 +0500] [773150] [INFO] Booting worker with pid: 773150
+[2025-10-26 20:17:08 +0500] [773147] [INFO] Started server process [773147]
+[2025-10-26 20:17:08 +0500] [773147] [INFO] Waiting for application startup.
+[2025-10-26 20:17:08 +0500] [773147] [INFO] Application startup complete.
+[2025-10-26 20:17:08 +0500] [773148] [INFO] Started server process [773148]
+[2025-10-26 20:17:08 +0500] [773148] [INFO] Waiting for application startup.
+[2025-10-26 20:17:08 +0500] [773148] [INFO] Application startup complete.
+[2025-10-26 20:17:09 +0500] [773149] [INFO] Started server process [773149]
+[2025-10-26 20:17:09 +0500] [773149] [INFO] Waiting for application startup.
+[2025-10-26 20:17:09 +0500] [773149] [INFO] Application startup complete.
+[2025-10-26 20:17:09 +0500] [773150] [INFO] Started server process [773150]
+[2025-10-26 20:17:09 +0500] [773150] [INFO] Waiting for application startup.
+[2025-10-26 20:17:09 +0500] [773150] [INFO] Application startup complete.

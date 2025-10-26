@@ -40,12 +40,27 @@ if [ -z "$LOCAL_IP" ]; then
 fi
 
 echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}Сервер запускается...${NC}"
-echo -e "${GREEN}================================${NC}\n"
-echo -e "Веб-интерфейс доступен по адресу:"
-echo -e "${YELLOW}http://${LOCAL_IP}:7000${NC}\n"
-echo -e "Для остановки нажмите ${RED}Ctrl+C${NC}\n"
+echo -e "${GREEN}Сервер запускается в фоновом режиме...${NC}"
 echo -e "${GREEN}================================${NC}\n"
 
-# Запуск сервера
-python3 main.py
+# Проверяем, не запущен ли уже gunicorn
+if pgrep -f gunicorn > /dev/null; then
+    echo -e "${YELLOW}Gunicorn уже запущен. Перезапуск...${NC}"
+    pkill gunicorn
+    sleep 2
+fi
+
+# Запуск сервера Gunicorn в фоновом режиме (nohup)
+nohup gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app -b 0.0.0.0:7000 > gunicorn.log 2>&1 &
+
+if [ $? -eq 0 ]; then
+    echo -e "Веб-интерфейс доступен по адресу:"
+    echo -e "${YELLOW}http://${LOCAL_IP}:7000${NC}\n"
+    echo -e "Сервер запущен в фоне. Логи пишутся в ${GREEN}gunicorn.log${NC}"
+    echo -e "Для остановки используйте ${RED}./stop.sh${NC}\n"
+else
+    echo -e "${RED}✗ Ошибка запуска Gunicorn.${NC}"
+    echo "Проверьте ${RED}gunicorn.log${NC} для деталей."
+fi
+
+echo -e "${GREEN}================================${NC}\n"
