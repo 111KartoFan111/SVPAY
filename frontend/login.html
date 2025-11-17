@@ -181,11 +181,9 @@
             text-decoration: underline;
         }
 
-        .btn-login {
+        .btn {
             width: 100%;
             padding: 14px;
-            background: #2563eb;
-            color: white;
             border: none;
             border-radius: 12px;
             font-size: 16px;
@@ -193,53 +191,41 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+        
+        .btn-login {
+            background: #2563eb;
+            color: white;
+        }
 
         .btn-login:hover {
             background: #1d4ed8;
             transform: translateY(-1px);
             box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
         }
-
-        .btn-login:active {
-            transform: translateY(0);
+        
+        .btn-login:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin: 32px 0;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .divider span {
-            padding: 0 16px;
-            color: #94a3b8;
-            font-size: 14px;
-        }
-
-        .btn-demo {
-            width: 100%;
-            padding: 14px;
+        .btn-register {
             background: #f8fafc;
             color: #475569;
             border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            margin-top: 12px;
         }
-
-        .btn-demo:hover {
+        
+        .btn-register:hover {
             background: #f1f5f9;
             border-color: #cbd5e1;
+        }
+
+        .btn-register:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
         }
 
         .error-message {
@@ -251,9 +237,22 @@
             font-size: 14px;
             margin-bottom: 20px;
             border: 1px solid #fecaca;
+            text-align: center;
+        }
+        
+        .success-message {
+            display: none;
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #bbf7d0;
+            text-align: center;
         }
 
-        .error-message.show {
+        .error-message.show, .success-message.show {
             display: block;
         }
 
@@ -307,10 +306,11 @@
         <div class="login-card">
             <div class="login-header">
                 <h2 class="login-title">Добро пожаловать</h2>
-                <p class="login-subtitle">Войдите в свой аккаунт</p>
+                <p class="login-subtitle">Войдите или зарегистрируйтесь</p>
             </div>
 
             <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
 
             <form id="loginForm">
                 <div class="form-group">
@@ -349,20 +349,15 @@
                         <input type="checkbox" id="remember" name="remember">
                         <label class="checkbox-label" for="remember">Запомнить меня</label>
                     </div>
-                    <a href="#" class="forgot-link">Забыли пароль?</a>
+                    <!-- <a href="#" class="forgot-link">Забыли пароль?</a> -->
                 </div>
 
-                <button type="submit" class="btn-login">Войти</button>
+                <button type="submit" class="btn btn-login" id="loginButton">Войти</button>
+                <button type="button" class="btn btn-register" id="registerButton" onclick="registerUser()">
+                    Зарегистрироваться
+                </button>
             </form>
-
-            <div class="divider">
-                <span>или</span>
-            </div>
-
-            <button type="button" class="btn-demo" onclick="demoLogin()">
-                Демо-режим
-            </button>
-
+            
             <div class="footer-text">
                 © 2024 SVPAY. Все права защищены.
             </div>
@@ -384,59 +379,130 @@
             }
         }
 
-        // Show error message
-        function showError(message) {
+        function showMessage(type, message) {
             const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
+            const successDiv = document.getElementById('successMessage');
+            
+            // Сбросить оба
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+
+            let el;
+            if (type === 'error') {
+                el = errorDiv;
+            } else {
+                el = successDiv;
+            }
+
+            el.textContent = message;
+            el.classList.add('show');
 
             setTimeout(() => {
-                errorDiv.classList.remove('show');
+                el.classList.remove('show');
             }, 5000);
+        }
+
+        function setButtonsDisabled(disabled) {
+            document.getElementById('loginButton').disabled = disabled;
+            document.getElementById('registerButton').disabled = disabled;
         }
 
         // Handle login form submission
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            setButtonsDisabled(true);
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const remember = document.getElementById('remember').checked;
 
+            if (!username || !password) {
+                showMessage('error', 'Пожалуйста, заполните все поля');
+                setButtonsDisabled(false);
+                return;
+            }
+            
             try {
-                // For demo purposes - simple authentication
-                // In production, this should be a proper API call
-                if (username && password) {
-                    // Store login state
+                // Подготовка данных для OAuth2PasswordRequestForm
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                const response = await fetch('/api/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Сохраняем токен
                     if (remember) {
-                        localStorage.setItem('svpay_auth', 'true');
-                        localStorage.setItem('svpay_user', username);
+                        localStorage.setItem('svpay_token', data.access_token);
                     } else {
-                        sessionStorage.setItem('svpay_auth', 'true');
-                        sessionStorage.setItem('svpay_user', username);
+                        sessionStorage.setItem('svpay_token', data.access_token);
                     }
 
                     // Redirect to main page
-                    window.location.href = 'index.html';
+                    window.location.href = '/'; // Перенаправляем на корень
+                } else if (response.status === 401) {
+                    showMessage('error', 'Неверное имя пользователя или пароль');
                 } else {
-                    showError('Пожалуйста, заполните все поля');
+                    showMessage('error', `Ошибка: ${response.statusText}`);
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showError('Произошла ошибка при входе. Попробуйте снова.');
+                showMessage('error', 'Произошла ошибка сети. Попробуйте снова.');
             }
+            
+            setButtonsDisabled(false);
         });
 
-        // Demo login
-        function demoLogin() {
-            sessionStorage.setItem('svpay_auth', 'true');
-            sessionStorage.setItem('svpay_user', 'demo');
-            window.location.href = 'index.html';
+        // Handle registration
+        async function registerUser() {
+            setButtonsDisabled(true);
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('error', 'Для регистрации введите имя пользователя и пароль');
+                setButtonsDisabled(false);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    showMessage('success', 'Регистрация прошла успешно! Теперь вы можете войти.');
+                } else if (response.status === 400) {
+                    const error = await response.json();
+                    showMessage('error', `Ошибка: ${error.detail}`);
+                } else {
+                    showMessage('error', `Ошибка сервера: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showMessage('error', 'Произошла ошибка сети. Попробуйте снова.');
+            }
+
+            setButtonsDisabled(false);
         }
 
-        // Check if already logged in
-        if (localStorage.getItem('svpay_auth') || sessionStorage.getItem('svpay_auth')) {
-            window.location.href = 'index.html';
+
+        // Check if already logged in (на всякий случай, хотя сервер должен редиректить)
+        if (localStorage.getItem('svpay_token') || sessionStorage.getItem('svpay_token')) {
+            window.location.href = '/';
         }
     </script>
 </body>

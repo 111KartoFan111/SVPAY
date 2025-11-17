@@ -38,6 +38,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap; /* Для мобильных */
         }
 
         .header-actions {
@@ -386,7 +387,7 @@
             <h1>
                 <span>Управление RFID Картами</span>
                 <div class="header-actions">
-                    <span class="user-badge" id="userBadge">Пользователь</span>
+                    <span class="user-badge" id="userBadge">Загрузка...</span>
                     <button class="logout-btn" onclick="logout()">Выход</button>
                 </div>
             </h1>
@@ -492,44 +493,96 @@
         let currentEditCardId = null;
         let currentBalanceCardId = null;
 
+        // --- Новые функции аутентификации ---
+
+        function getToken() {
+            return localStorage.getItem('svpay_token') || sessionStorage.getItem('svpay_token');
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            if (!token) {
+                logout(); // Перенаправить, если токена нет
+                return null;
+            }
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // Глобальная функция fetch с обработкой 401
+        async function fetchWithAuth(url, options = {}) {
+            const headers = getAuthHeaders();
+            if (!headers) {
+                // Уже перенаправлено через logout()
+                return new Promise((_, reject) => reject(new Error("No token")));
+            }
+            
+            options.headers = { ...headers, ...options.headers };
+
+            try {
+                const response = await fetch(url, options);
+                
+                if (response.status === 401) {
+                    // Токен недействителен или истек
+                    alert("Сессия истекла. Пожалуйста, войдите снова.");
+                    logout();
+                    // Бросаем ошибку, чтобы прервать выполнение .then()
+                    throw new Error("Unauthorized");
+                }
+                
+                return response;
+                
+            } catch (error) {
+                // Пробрасываем ошибку (включая "Unauthorized")
+                throw error;
+            }
+        }
+
+
         // Check authentication
-        function checkAuth() {
-            const isAuth = localStorage.getItem('svpay_auth') || sessionStorage.getItem('svpay_auth');
-            if (!isAuth) {
-                window.location.href = 'login.html';
+        async function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login'; // Перенаправляем на страницу входа
                 return false;
             }
 
-            // Display username
-            const username = localStorage.getItem('svpay_user') || sessionStorage.getItem('svpay_user') || 'Пользователь';
-            document.getElementById('userBadge').textContent = username;
-            return true;
+            // Получаем имя пользователя
+            try {
+                const response = await fetchWithAuth('/api/users/me');
+                if (!response.ok) throw new Error("Failed to fetch user");
+                
+                const user = await response.json();
+                document.getElementById('userBadge').textContent = escapeHtml(user.username);
+                return true;
+            } catch (error) {
+                console.error("Auth check failed:", error);
+                // fetchWithAuth уже должен был вызвать logout() при 401
+                return false;
+            }
         }
 
         // Logout function
         function logout() {
-            localStorage.removeItem('svpay_auth');
-            localStorage.removeItem('svpay_user');
-            sessionStorage.removeItem('svpay_auth');
-            sessionStorage.removeItem('svpay_user');
-            window.location.href = 'login.html';
+            localStorage.removeItem('svpay_token');
+            sessionStorage.removeItem('svpay_token');
+            window.location.href = '/login'; // Перенаправляем на страницу входа
         }
 
         // Load cards on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Check authentication first
-            if (!checkAuth()) return;
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) return;
 
             loadCards();
 
             // Search functionality
             document.getElementById('searchInput').addEventListener('input', (e) => {
                 const searchTerm = e.target.value;
-                if (searchTerm) {
-                    loadCards(searchTerm);
-                } else {
-                    loadCards();
-                }
+                loadCards(searchTerm); // Загружаем с поиском
             });
         });
 
@@ -537,7 +590,12 @@
         async function loadCards(search = '') {
             try {
                 const url = search ? `/api/cards?search=${encodeURIComponent(search)}` : '/api/cards';
-                const response = await fetch(url);
+                const response = await fetchWithAuth(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+                
                 const cards = await response.json();
                 
                 const container = document.getElementById('cardsContainer');
@@ -576,6 +634,7 @@
                     </div>
                 `).join('');
             } catch (error) {
+                if (error.message === "Unauthorized") return; // Уже обработано
                 console.error('Error loading cards:', error);
                 document.getElementById('cardsContainer').innerHTML = `
                     <div class="empty-state">
@@ -595,9 +654,8 @@
             const balance = parseInt(document.getElementById('newCardBalance').value);
             
             try {
-                const response = await fetch('/api/cards', {
+                const response = await fetchWithAuth('/api/cards', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ rfid_uid: uid, name, balance })
                 });
                 
@@ -613,6 +671,7 @@
                     alert('Ошибка: ' + error.detail);
                 }
             } catch (error) {
+                if (error.message === "Unauthorized") return;
                 console.error('Error adding card:', error);
                 alert('Не удалось добавить карту');
             }
@@ -639,9 +698,8 @@
             const amount = parseInt(document.getElementById('balanceAmount').value);
             
             try {
-                const response = await fetch(`/api/cards/${currentBalanceCardId}/add-balance`, {
+                const response = await fetchWithAuth(`/api/cards/${currentBalanceCardId}/add-balance`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount })
                 });
                 
@@ -652,6 +710,7 @@
                     alert('Не удалось пополнить баланс');
                 }
             } catch (error) {
+                if (error.message === "Unauthorized") return;
                 console.error('Error adding balance:', error);
                 alert('Не удалось пополнить баланс');
             }
@@ -662,7 +721,7 @@
             currentEditCardId = cardId;
             
             try {
-                const response = await fetch(`/api/cards/${cardId}`);
+                const response = await fetchWithAuth(`/api/cards/${cardId}`);
                 const card = await response.json();
                 
                 document.getElementById('editCardUid').value = card.rfid_uid;
@@ -671,6 +730,7 @@
                 
                 document.getElementById('editCardModal').classList.add('active');
             } catch (error) {
+                if (error.message === "Unauthorized") return;
                 console.error('Error loading card:', error);
                 alert('Не удалось загрузить данные карты');
             }
@@ -684,9 +744,8 @@
             const balance = parseInt(document.getElementById('editCardBalance').value);
             
             try {
-                const response = await fetch(`/api/cards/${currentEditCardId}`, {
+                const response = await fetchWithAuth(`/api/cards/${currentEditCardId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, balance })
                 });
                 
@@ -697,6 +756,7 @@
                     alert('Не удалось обновить карту');
                 }
             } catch (error) {
+                if (error.message === "Unauthorized") return;
                 console.error('Error updating card:', error);
                 alert('Не удалось обновить карту');
             }
@@ -709,7 +769,7 @@
             }
             
             try {
-                const response = await fetch(`/api/cards/${cardId}`, {
+                const response = await fetchWithAuth(`/api/cards/${cardId}`, {
                     method: 'DELETE'
                 });
                 
@@ -719,6 +779,7 @@
                     alert('Не удалось удалить карту');
                 }
             } catch (error) {
+                if (error.message === "Unauthorized") return;
                 console.error('Error deleting card:', error);
                 alert('Не удалось удалить карту');
             }
@@ -742,6 +803,7 @@
 
         // Escape HTML to prevent XSS
         function escapeHtml(text) {
+            if (typeof text !== 'string') return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;

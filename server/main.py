@@ -12,8 +12,6 @@ import jwt
 from jwt import PyJWTError
 from passlib.context import CryptContext
 
-# --- Настройки безопасности ---
-# В реальном приложении используйте `openssl rand -hex 32` для генерации ключа
 SECRET_KEY = "a_very_secret_key_that_should_be_in_an_env_file"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
