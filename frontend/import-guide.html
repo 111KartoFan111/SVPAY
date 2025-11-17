@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Инструкция по массовому импорту - SVPAY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .guide {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            color: #1e293b;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        h2 {
+            color: #334155;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-left: 4px solid #2563eb;
+            border-radius: 8px;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        .step-content {
+            margin-top: 10px;
+            margin-left: 42px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .example {
+            background: #f1f5f9;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+
+        .warning {
+            background: #fef08a;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #92400e;
+        }
+
+        .success {
+            background: #dcfce7;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #166534;
+        }
+
+        .back-link {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .back-link a {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .back-link a:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="guide">
+            <h1>📊 Инструкция по массовому импорту карт</h1>
+
+            <h2>Что такое массовый импорт?</h2>
+            <p style="color: #475569; line-height: 1.6; margin: 10px 0;">
+                Функция массового импорта позволяет загружать несколько RFID карт одновременно из файла Excel (XLSX, XLS) или CSV. 
+                Это значительно экономит время при работе с большим количеством карт.
+            </p>
+
+            <h2>Формат файла</h2>
+            <p style="color: #475569;">Файл должен содержать три столбца:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Столбец</th>
+                        <th>Имя</th>
+                        <th>Описание</th>
+                        <th>Пример</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A</td>
+                        <td>UID</td>
+                        <td>Уникальный идентификатор карты</td>
+                        <td>A1B2C3D4</td>
+                    </tr>
+                    <tr>
+                        <td>B</td>
+                        <td>Имя</td>
+                        <td>Название карты (например, ФИО владельца)</td>
+                        <td>Иван Иванов</td>
+                    </tr>
+                    <tr>
+                        <td>C</td>
+                        <td>Баланс</td>
+                        <td>Начальный баланс в стирках</td>
+                        <td>10</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="example">
+UID,Имя,Баланс
+A1B2C3D4,Иван Иванов,10
+E5F6G7H8,Мария Петрова,20
+I9J0K1L2,Пётр Сидоров,15
+            </div>
+
+            <h2>Пошаговая инструкция</h2>
+
+            <div class="step">
+                <span class="step-number">1</span>
+                <span class="step-title">Скачайте шаблон</span>
+                <div class="step-content">
+                    Нажмите кнопку <strong>"📥 Скачать шаблон"</strong> на главной странице. 
+                    Это загрузит готовый файл Excel с заголовками и примерами.
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <span class="step-title">Заполните данные</span>
+                <div class="step-content">
+                    Откройте скачанный файл в Excel/LibreOffice и замените примеры на реальные данные ваших карт.
+                    Сохраняйте в формате XLSX или CSV.
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <span class="step-title">Загрузите файл</span>
+                <div class="step-content">
+                    Нажмите <strong>"📤 Импорт из Excel"</strong> на главной странице и выберите заполненный файл.
+                    Вы можете перетащить файл или кликнуть для выбора.
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <span class="step-title">Проверьте результат</span>
+                <div class="step-content">
+                    После загрузки система покажет количество успешно импортированных карт и список ошибок (если есть).
+                    Все карты появятся на главной странице.
+                </div>
+            </div>
+
+            <h2>Важные правила</h2>
+
+            <div class="warning">
+                ⚠️ <strong>UID должен быть уникальным</strong><br>
+                Если карта с таким UID уже существует, она не будет создана. Система выдаст ошибку для этой строки.
+            </div>
+
+            <div class="warning">
+                ⚠️ <strong>UID и Имя обязательны</strong><br>
+                Если в строке отсутствует UID или Имя, эта строка будет пропущена с ошибкой.
+            </div>
+
+            <div class="warning">
+                ⚠️ <strong>Баланс должен быть числом</strong><br>
+                Если баланс не является числом, он будет установлен в 0. Например: "abc" → 0
+            </div>
+
+            <div class="success">
+                ✅ <strong>Дублирование запрещено</strong><br>
+                Система автоматически предотвращает создание карт с одинаковым UID.
+            </div>
+
+            <h2>Примеры файлов</h2>
+
+            <h3>✅ Правильный формат (Excel):</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>UID</th>
+                        <th>Имя</th>
+                        <th>Баланс</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A1B2C3D4</td>
+                        <td></td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>E5F6G7H8</td>
+                        <td>Мария Петрова</td>
+                        <td>20</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>❌ Неправильный формат:</h3>
+            <div class="example">
+Иван Иванов,10,A1B2C3D4  // Порядок столбцов неверный
+A1B2C3D4  // Отсутствует Имя
+E5F6G7H8,Мария,abc  // Баланс не числовой
+            </div>
+
+            <h2>Решение проблем</h2>
+
+            <h3>Ошибка: "Card with this UID already exists"</h3>
+            <p style="color: #475569; margin: 10px 0;">
+                Карта с таким UID уже создана в системе. Используйте другой UID или удалите старую карту.
+            </p>
+
+            <h3>Ошибка при чтении файла</h3>
+            <p style="color: #475569; margin: 10px 0;">
+                Убедитесь, что файл в формате XLSX, XLS или CSV. Откройте его в Excel и пересохраните.
+            </p>
+
+            <h3>Некоторые строки не импортировались</h3>
+            <p style="color: #475569; margin: 10px 0;">
+                Проверьте, что все обязательные поля (UID и Имя) заполнены. 
+                Система покажет вам список ошибок после импорта.
+            </p>
+
+            <div class="back-link">
+                <a href="/">← Вернуться на главную страницу</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

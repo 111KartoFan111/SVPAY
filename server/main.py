@@ -11,6 +11,8 @@ import uvicorn
 import jwt
 from jwt import PyJWTError
 from passlib.context import CryptContext
+from typing import Union
+
 
 SECRET_KEY = "a_very_secret_key_that_should_be_in_an_env_file"
 ALGORITHM = "HS256"
@@ -261,6 +263,24 @@ async def login_page():
         # (на случай, если фронтенд обрабатывает это)
         return RedirectResponse(url="/")
 
+@app.get("/history.html", response_class=HTMLResponse)
+async def history_page():
+    """Обслуживает страницу истории history.html"""
+    try:
+        with open("../frontend/history.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="history.html not found")
+
+@app.get("/import-guide.html", response_class=HTMLResponse)
+async def import_guide_page():
+    """Обслуживает страницу инструкции по импорту"""
+    try:
+        with open("../frontend/import-guide.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="import-guide.html not found")
+
 
 # --- API Карт (ЗАЩИЩЕНО) ---
 
@@ -472,6 +492,25 @@ async def delete_card(card_id: int, current_user: User = Depends(get_current_use
     
     return {"success": True, "message": "Card deleted"}
 
+@app.get("/api/transactions/all")
+async def get_all_transactions(limit: Union[int, str] = 100, current_user: User = Depends(get_current_user)):
+    """(Защищено) Получает все транзакции"""
+    conn = get_db()
+    c = conn.cursor()
+    
+    if isinstance(limit, str) and limit.lower() == "all":
+        c.execute("SELECT * FROM transactions ORDER BY timestamp DESC")
+    else:
+        c.execute(
+            "SELECT * FROM transactions ORDER BY timestamp DESC LIMIT ?",
+            (int(limit),)
+        )
+
+    results = c.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in results]
+
 @app.get("/api/transactions/{card_id}")
 async def get_card_transactions(card_id: int, limit: int = 50, current_user: User = Depends(get_current_user)):
     """(Защищено) Получает историю транзакций для карты"""
@@ -485,4 +524,3 @@ async def get_card_transactions(card_id: int, limit: int = 50, current_user: Use
     conn.close()
     
     return [dict(row) for row in results]
-

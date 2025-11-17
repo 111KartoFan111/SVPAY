@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVPAY - Управление RFID Картами</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // Fallback для загрузки XLSX если первая ссылка не сработает
+        window.addEventListener('load', function() {
+            if (typeof XLSX === 'undefined') {
+                console.warn('XLSX не загружена с cdnjs, пытаемся альтернативный источник');
+                var script = document.createElement('script');
+                script.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
+                script.onload = function() {
+                    console.log('XLSX загружена с unpkg');
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('XLSX успешно загружена');
+            }
+        });
+    </script>
     <style>
         * {
             margin: 0;
@@ -379,6 +396,95 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-drop-zone {
+            border: 2px dashed #2563eb;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            background: #f0f9ff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 20px 0;
+        }
+
+        .file-drop-zone:hover {
+            background: #e0f2fe;
+            border-color: #1d4ed8;
+        }
+
+        .file-drop-zone.drag-over {
+            background: #dbeafe;
+            border-color: #1d4ed8;
+        }
+
+        .file-drop-zone p {
+            color: #475569;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        .import-progress {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .import-result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .import-result.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .import-result.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -398,6 +504,15 @@
                 <button class="btn btn-primary" onclick="openAddCardModal()">
                     + Добавить карту
                 </button>
+                <button class="btn btn-primary" onclick="openBulkImportModal()">
+                    📤 Импорт из Excel
+                </button>
+                <button class="btn btn-primary" onclick="downloadTemplate()">
+                    📥 Скачать шаблон
+                </button>
+                <a href="/history.html" class="btn btn-primary" style="text-decoration: none;">
+                    📊 История
+                </a>
             </div>
         </header>
 
@@ -486,6 +601,44 @@
                     Сохранить изменения
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="bulkImportModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Массовый импорт карт</h2>
+                <button class="close-btn" onclick="closeModal('bulkImportModal')">&times;</button>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <p style="color: #475569; margin-bottom: 15px;">Загрузите файл Excel с картами. Формат: UID, Имя, Баланс</p>
+                
+                <div class="file-drop-zone" id="dropZone" onclick="document.getElementById('bulkFileInput').click()">
+                    <p style="font-size: 16px; font-weight: 600;">Перетащите файл сюда</p>
+                    <p>или нажмите для выбора</p>
+                    <p style="font-size: 12px; color: #64748b;">Поддерживаются форматы: .xlsx, .xls, .csv</p>
+                </div>
+                
+                <input type="file" id="bulkFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleFileSelect(event)">
+                
+                <div class="import-progress" id="importProgress">
+                    <p id="progressText">Обработка...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                
+                <div class="import-result" id="importResult">
+                    <p id="resultText"></p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="closeModal('bulkImportModal')" style="flex: 1;">Отмена</button>
+                <button class="btn btn-primary" onclick="downloadTemplate()" style="flex: 1;">📥 Скачать шаблон</button>
+            </div>
         </div>
     </div>
 
@@ -807,6 +960,209 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ===== Функции для массового импорта =====
+        
+        function openBulkImportModal() {
+            document.getElementById('bulkImportModal').classList.add('active');
+            setupDragAndDrop();
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFileSelect({ target: { files } });
+            });
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            const file = files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    let cards = [];
+
+                    if (file.name.endsWith('.csv')) {
+                        cards = parseCSV(data);
+                    } else {
+                        // Проверяем доступность XLSX
+                        if (typeof XLSX === 'undefined') {
+                            showImportResult('Ошибка: Библиотека Excel не загружена. Пожалуйста, обновите страницу.', 'error');
+                            console.error('XLSX не определена при загрузке файла');
+                            return;
+                        }
+
+                        const workbook = XLSX.read(data, { type: 'binary' });
+                        const sheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[sheetName];
+                        cards = XLSX.utils.sheet_to_json(sheet);
+                    }
+
+                    importCards(cards);
+                } catch (error) {
+                    showImportResult(`Ошибка при чтении файла: ${error.message}`, 'error');
+                    console.error('File read error:', error);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseCSV(csvData) {
+            const lines = new TextDecoder().decode(csvData).split('\n');
+            const cards = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                
+                const [uid, name, balance] = lines[i].split(',').map(s => s.trim().replace(/"/g, ''));
+                if (uid) {
+                    cards.push({
+                        'UID': uid,
+                        'Имя': name || '',
+                        'Баланс': parseInt(balance) || 0
+                    });
+                }
+            }
+            
+            return cards;
+        }
+
+        async function importCards(cards) {
+            if (cards.length === 0) {
+                showImportResult('Файл не содержит данных', 'error');
+                return;
+            }
+
+            const progressDiv = document.getElementById('importProgress');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            progressDiv.style.display = 'block';
+
+            let successful = 0;
+            let failed = 0;
+            const errors = [];
+
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const progress = Math.round((i + 1) / cards.length * 100);
+                
+                progressFill.style.width = progress + '%';
+                progressText.textContent = `Обработка ${i + 1} из ${cards.length}...`;
+
+                try {
+                    const uid = card['UID'] || card.uid;
+                    const name = card['Имя'] || card.name;
+                    const balance = parseInt(card['Баланс'] || card.balance || 0);
+
+                    if (!uid || !name) {
+                        failed++;
+                        errors.push(`Строка ${i + 2}: отсутствует UID или Имя`);
+                        continue;
+                    }
+
+                    const response = await fetchWithAuth('/api/cards', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            rfid_uid: uid,
+                            name: name,
+                            balance: balance
+                        })
+                    });
+
+                    if (response.ok) {
+                        successful++;
+                    } else {
+                        const errorData = await response.json();
+                        failed++;
+                        errors.push(`${name}: ${errorData.detail || 'Неизвестная ошибка'}`);
+                    }
+                } catch (error) {
+                    failed++;
+                    errors.push(`Ошибка при обработке: ${error.message}`);
+                }
+            }
+
+            progressDiv.style.display = 'none';
+            loadCards(); // Обновляем список карт
+
+            let resultMessage = `✅ Успешно загружено: ${successful}\n❌ Ошибок: ${failed}`;
+            if (errors.length > 0) {
+                resultMessage += `\n\nПервые ошибки:\n${errors.slice(0, 5).join('\n')}`;
+            }
+
+            showImportResult(resultMessage, failed === 0 ? 'success' : 'error');
+        }
+
+        function downloadTemplate() {
+            // Проверяем доступность XLSX
+            if (typeof XLSX === 'undefined') {
+                alert('Ошибка: Библиотека Excel не загружена. Пожалуйста, обновите страницу и попробуйте снова.');
+                console.error('XLSX не определена');
+                return;
+            }
+
+            try {
+                const templateData = [
+                    ['UID', 'Имя', 'Баланс']
+                ];
+
+                const ws = XLSX.utils.aoa_to_sheet(templateData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Карты');
+
+                ws['!cols'] = [
+                    { wch: 15 },  // UID
+                    { wch: 25 },  // Имя
+                    { wch: 10 }   // Баланс
+                ];
+
+                const fileName = `svpay_template_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                console.log('Шаблон успешно скачан');
+            } catch (error) {
+                console.error('Ошибка при скачивании шаблона:', error);
+                alert('Ошибка при скачивании шаблона: ' + error.message);
+            }
+        }
+
+        function showImportResult(message, type) {
+            const resultDiv = document.getElementById('importResult');
+            const resultText = document.getElementById('resultText');
+            
+            resultDiv.className = `import-result ${type}`;
+            resultText.textContent = message;
+            resultDiv.style.display = 'block';
         }
     </script>
 </body>
